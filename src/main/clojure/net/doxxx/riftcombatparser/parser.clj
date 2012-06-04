@@ -44,11 +44,12 @@
 (defn parse [reader]
   (parse-lines (line-seq reader)))
 
-(defn update-actors [actors event]
+(defn- update-actors [actors event]
   (assoc actors (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
 
 (defn map-actors [events]
-  (loop [actors {} events events]
+  (loop [actors {}
+         events events]
     (if (empty? events)
       actors
       (recur (update-actors actors (first events)) (rest events)))))

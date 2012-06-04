@@ -1,7 +1,9 @@
 (ns net.doxxx.riftcombatparser.core
-  (:use [net.doxxx.riftcombatparser.parser :as p]))
+  (:use net.doxxx.riftcombatparser.parser))
 
-(let [events (p/parse (new java.io.BufferedReader (new java.io.FileReader "C:\\Rift\\RIFT Game\\CombatLog-TEST.txt")))]
-  (time (p/map-actors events)))
-
-(shutdown-agents)
+(defn test-large-file-performance []
+  (let [filename "src/test/resources/CombatLog-Large.txt"
+        events (parse (new java.io.BufferedReader (new java.io.FileReader filename)))
+        actors (time (map-actors events))]
+    (println (str (count events) " events loaded."))
+    (println (str (count actors) " actors found."))))
