@@ -1,9 +1,10 @@
 (ns net.doxxx.riftcombatparser.core
-  (:use net.doxxx.riftcombatparser.parser))
+  (:use net.doxxx.riftcombatparser.parser)
+  (:require [clojure.java.io :as jio]))
 
 (defn test-large-file-performance []
-  (let [filename "src/test/resources/CombatLog-Large.txt"
-        events (parse (new java.io.BufferedReader (new java.io.FileReader filename)))
-        actors (time (map-actors events))]
-    (println (str (count events) " events loaded."))
-    (println (str (count actors) " actors found."))))
+  (with-open [reader (jio/reader "src/test/resources/CombatLog-Large.txt")]
+    (let [events (parse reader)
+          actors (time (map-actors events))]
+      (println (str (count events) " events loaded."))
+      (println (str (count actors) " actors found.")))))

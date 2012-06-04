@@ -1,6 +1,7 @@
 (ns net.doxxx.riftcombatparser.test_parser
   (:use net.doxxx.riftcombatparser.parser)
-  (:use midje.sweet))
+  (:use midje.sweet)
+  (:require [clojure.java.io :as jio]))
 
 (fact (parse-time "10:10:10") => 36610)
 
@@ -21,5 +22,7 @@
                                             "T=P#R=C#227009568756889439" "Lucida",
                                             "T=N#R=O#9223372037794304832" "Arban Chinua"}))
 
-(let [events (parse (new java.io.BufferedReader (new java.io.FileReader "src/test/resources/CombatLog.txt")))]
-  (fact (count events) => 100))
+(with-open [reader (jio/reader "src/test/resources/CombatLog.txt")]
+  (let [events (parse reader)]
+    (fact (count events) => 100)))
+
