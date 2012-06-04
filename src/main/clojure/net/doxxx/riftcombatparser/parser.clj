@@ -1,14 +1,74 @@
-(ns net.doxxx.riftcombatparser.parser)
+(ns net.doxxx.riftcombatparser.parser
+  (:require clojure.set))
 
-; hh, mm, ss
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Event Types
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def event-types #{:begin-casting
+                   :interrupted
+                   :direct-damage
+                   :damage-over-time
+                   :heal
+                   :buff-gain
+                   :buff-fade
+                   :debuff-gain
+                   :debuff-fade
+                   :miss
+                   :slain
+                   :died
+                   :env-damage
+                   :dodge
+                   :parry
+                   :resist
+                   :crit-damage
+                   :favor-gain
+                   :immune
+                   :power-gain
+                   :crit-heal})
+
+(defn event-type? [x] (contains? event-types x))
+
+(def event-type-to-int
+  (zipmap
+    [:begin-casting
+     :interrupted
+     :direct-damage
+     :damage-over-time
+     :heal
+     :buff-gain
+     :buff-fade
+     :debuff-gain
+     :debuff-fade
+     :miss
+     :slain
+     :died
+     :env-damage
+     :dodge
+     :parry
+     :resist
+     :crit-damage
+     :favor-gain
+     :immune
+     :power-gain
+     :crit-heal]
+    [1 2 3 4 5 6 7 8 9 10 11 12 14 15 16 19 23 24 26 27 28]))
+
+(def int-to-event-type (clojure.set/map-invert event-type-to-int))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Parsing Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; groups: hr min sec
 (def time-re #"([0-9][0-9]):([0-9][0-9]):([0-9][0-9])")
-; time, data
+; groups: time, data
 (def line-re #"^([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.+)$")
-; state
+; groups: state
 (def combat-toggle-re #" Combat (Begin|End)")
-; data, text
+; groups: data text
 (def combat-event-re #": \( (.+?) \) (.+)")
-; event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name
+; groups: event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name
 (def combat-data-re #"([0-9]+) , (T=.+) , (T=.+) , (T=.+) , (T=.+) , (.*?) , (.*?) , (-?[0-9]*) , ([0-9]*) , (.*?)")
 
 (defrecord CombatToggle [event-time in-combat])
@@ -43,6 +103,10 @@
 
 (defn parse [reader]
   (parse-lines (line-seq reader)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Event Processing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- update-actors [actors event]
   (assoc actors (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
