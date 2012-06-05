@@ -104,3 +104,58 @@
     (if (empty? events)
       entities
       (recur (update-entities entities (first events)) (rest events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Fight Splitting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn- hostile-action? [event]
+  (contains? #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage} (:event-type event)))
+
+(defn- dead-entity [event]
+  (let [event-type (:event-type event)]
+    (if (= :died event-type)
+      (:actor-id event)
+      (if (= :slain event-type)
+        (:target-id event)
+        nil))))
+
+(defn extract-npcs [event]
+  (filter npc? [(:actor-id event) (:target-id event)]))
+
+(defn extract-pcs [event]
+  (filter pc? [(:actor-id event) (:target-id event)]))
+
+(defrecord DeathEvent [event-time event-type entity-id original-event])
+
+(defn insert-death-later [death events]
+  (let [part (partition-by (fn [event] (<= (:event-time event) (:event-time death))) events)]
+    (concat (vec (conj (first part) (->DeathEvent (:event-time death) :death (dead-entity death) death))) (second part))))
+
+(defn split-fights [events]
+  (loop [fights []
+         current-fight []
+         npcs #{}
+         dead-npcs #{}
+         pcs #{}
+         dead-pcs #{}
+         event (first events)
+         events (rest events)]
+    (if (nil? event)
+      (if (seq current-fight)
+        (conj fights current-fight)
+        fights)
+      (if (= :death (:event-type event))
+        (if (npc? (:entity-id event))
+          (recur fights (conj current-fight (:original-event event)) npcs (conj dead-npcs (:entity-id event)) pcs dead-pcs (first events) (rest events))
+          (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs (:entity-id event)) (first events) (rest events)))
+        (if (or (and (seq npcs) (= npcs dead-npcs) (seq current-fight))
+              (and (seq pcs) (= pcs dead-npcs) (seq current-fight))
+              (and (seq current-fight) (>= 5 (- (:event-time event) (:event-time (last current-fight))))))
+          (recur (conj fights current-fight) [] #{} #{} #{} #{} (first events) (rest events))
+          (if (contains? #{:died :slain} (:event-type event))
+            (let [events (insert-death-later event (rest events))]
+              (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))
+            (if (or (hostile-action? event) (seq current-fight))
+              (recur fights (conj current-fight event) (concat npcs (extract-npcs event)) dead-npcs (concat pcs (extract-pcs event)) dead-pcs (first events) (rest events))
+              (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))))))))
