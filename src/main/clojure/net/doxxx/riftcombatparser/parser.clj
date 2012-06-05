@@ -55,7 +55,7 @@
 
 (defn parse-combat-data [event-time data text]
   (let [[_ event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name] (re-matches combat-data-re data)]
-    (CombatData. event-time (Integer/parseInt event-type) actor-id target-id actor-owner-id target-owner-id actor-name target-name (Integer/parseInt amount) (Integer/parseInt spell-id) spell-name text)))
+    (CombatData. event-time (int-to-event-type (Integer/parseInt event-type)) actor-id target-id actor-owner-id target-owner-id actor-name target-name (Integer/parseInt amount) (Integer/parseInt spell-id) spell-name text)))
 
 (defn parse-combat-event [event-time data]
   (let [[_ combat-data text] (re-matches combat-event-re data)]
