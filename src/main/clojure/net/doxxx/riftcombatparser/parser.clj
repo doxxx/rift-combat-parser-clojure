@@ -5,56 +5,31 @@
 ; Event Types
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def event-types #{:begin-casting
-                   :interrupted
-                   :direct-damage
-                   :damage-over-time
-                   :heal
-                   :buff-gain
-                   :buff-fade
-                   :debuff-gain
-                   :debuff-fade
-                   :miss
-                   :slain
-                   :died
-                   :env-damage
-                   :dodge
-                   :parry
-                   :resist
-                   :crit-damage
-                   :favor-gain
-                   :immune
-                   :power-gain
-                   :crit-heal})
+(def event-types {:begin-casting 1
+                  :interrupted 2
+                  :direct-damage 3
+                  :damage-over-time 4
+                  :heal 5
+                  :buff-gain 6
+                  :buff-fade 7
+                  :debuff-gain 8
+                  :debuff-fade 9
+                  :miss 10
+                  :slain 11
+                  :died 12
+                  :env-damage 14
+                  :dodge 15
+                  :parry 16
+                  :resist 19
+                  :crit-damage 23
+                  :favor-gain 24
+                  :immune 26
+                  :power-gain 27
+                  :crit-heal 28})
 
 (defn event-type? [x] (contains? event-types x))
 
-(def event-type-to-int
-  (zipmap
-    [:begin-casting
-     :interrupted
-     :direct-damage
-     :damage-over-time
-     :heal
-     :buff-gain
-     :buff-fade
-     :debuff-gain
-     :debuff-fade
-     :miss
-     :slain
-     :died
-     :env-damage
-     :dodge
-     :parry
-     :resist
-     :crit-damage
-     :favor-gain
-     :immune
-     :power-gain
-     :crit-heal]
-    [1 2 3 4 5 6 7 8 9 10 11 12 14 15 16 19 23 24 26 27 28]))
-
-(def int-to-event-type (clojure.set/map-invert event-type-to-int))
+(def int-to-event-type (clojure.set/map-invert event-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Parsing Functions
