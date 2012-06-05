@@ -72,15 +72,35 @@
   (parse-lines (line-seq reader)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Entity ID Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def entity-re #"T=([NPX])#R=([CGORX])#([0-9]+)")
+
+(defn unpack-entity-id [id] (rest (re-matches entity-re id)))
+
+(defn npc? [id]
+  (let [[t r i] (unpack-entity-id id)]
+    (= t "N")))
+
+(defn pc? [id]
+  (let [[t r i] (unpack-entity-id id)]
+    (= t "P")))
+
+(defn nobody? [id]
+  (let [[t r i] (unpack-entity-id id)]
+    (= t "X")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Event Processing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn- update-actors [actors event]
-  (assoc actors (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
+(defn- update-entities [entities event]
+  (assoc entities (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
 
-(defn map-actors [events]
-  (loop [actors {}
+(defn map-entities [events]
+  (loop [entities {}
          events events]
     (if (empty? events)
-      actors
-      (recur (update-actors actors (first events)) (rest events)))))
+      entities
+      (recur (update-entities entities (first events)) (rest events)))))

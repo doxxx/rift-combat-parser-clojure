@@ -17,12 +17,17 @@
              "13:21:48: ( 5 , T=P#R=C#227009568756889439 , T=P#R=C#227009568756889439 , T=X#R=X#0 , T=X#R=X#0 , Lucida , Lucida , 0 , 293562978 , Salvation ) Lucida's Salvation heals Lucida for 0. (66 overheal)"
              "13:21:48: ( 8 , T=P#R=C#227009568756889439 , T=N#R=O#9223372037760753784 , T=X#R=X#0 , T=X#R=X#0 , Lucida , Dungeon Practice Dummy , 0 , 1309615220 , Brutalize ) Dungeon Practice Dummy is afflicted by Lucida's Brutalize."
              "13:57:43: ( 7 , T=P#R=O#227009568806991842 , T=P#R=O#227009568806991842 , T=X#R=X#0 , T=X#R=X#0 , Ikani , Ikani , 0 , 755603942 , Armor of Treachery ) Ikani's Armor of Treachery fades from Ikani."]]
-  (fact (map-actors (parse-lines lines)) => {"T=P#R=O#227009568806991842" "Ikani",
-                                            "T=N#R=O#9223372037760753784" "Dungeon Practice Dummy",
-                                            "T=P#R=C#227009568756889439" "Lucida",
-                                            "T=N#R=O#9223372037794304832" "Arban Chinua"}))
+  (fact (map-entities (parse-lines lines)) => {"T=P#R=O#227009568806991842" "Ikani",
+                                               "T=N#R=O#9223372037760753784" "Dungeon Practice Dummy",
+                                               "T=P#R=C#227009568756889439" "Lucida",
+                                               "T=N#R=O#9223372037794304832" "Arban Chinua"}))
 
 (with-open [reader (jio/reader "src/test/resources/CombatLog.txt")]
   (let [events (parse reader)]
     (fact (count events) => 100)))
 
+(fact (unpack-entity-id "T=N#R=O#9223372037794304832") => ["N", "O", "9223372037794304832"])
+
+(fact (npc? "T=N#R=O#9223372037794304832") => true)
+(fact (pc? "T=P#R=C#227009568756889439") => true)
+(fact (nobody? "T=X#R=X#0") => true)
