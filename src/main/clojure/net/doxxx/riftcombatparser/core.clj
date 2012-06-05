@@ -4,7 +4,7 @@
 
 (defn test-large-file-performance []
   (with-open [reader (jio/reader "src/test/resources/CombatLog-Large.txt")]
-    (let [events (parse reader)
+    (let [events (time (doall (parse reader)))
           actors (time (map-actors events))]
       (println (str (count events) " events loaded."))
       (println (str (count actors) " actors found.")))))
