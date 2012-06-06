@@ -31,3 +31,10 @@
 (fact (npc? "T=N#R=O#9223372037794304832") => true)
 (fact (pc? "T=P#R=C#227009568756889439") => true)
 (fact (nobody? "T=X#R=X#0") => true)
+
+(let [events [(->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
+              (->CombatData 2 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
+              (->CombatData 3 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")]
+      fights (split-fights events)]
+  (fact (count fights) => 1)
+  (fact (first fights) => events))
