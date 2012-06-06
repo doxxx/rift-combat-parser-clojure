@@ -105,6 +105,36 @@
       entities
       (recur (update-entities entities (first events)) (rest events)))))
 
+(defn- rel-time [event start-time]
+  (let [t (- (:event-time event) start-time)]
+    (if (< t 0)
+      (+ t 86400)
+      t)))
+
+(def ^:dynamic *start-time* 0)
+
+(defn- normalize-event-time [event]
+  (merge event (assoc (apply hash-map (interleave (keys event) (vals event))) :event-time (rel-time event *start-time*))))
+
+(defn normalize-event-times [events]
+  (binding [*start-time* (:event-time (first events))]
+    (map normalize-event-time events)))
+
+(defn update-event-time [event new-time]
+  (merge event {:event-time new-time}))
+
+(defn normalize-event-times [events]
+  (loop [prev-event nil current-event (first events) rest-events (rest events) result [] offset (- (:event-time (first events)))]
+    (if (nil? current-event)
+      result
+      (let [event-time (:event-time current-event)]
+        (let [offset (if (nil? prev-event)
+                       offset
+                       (if (< event-time (:event-time prev-event))
+                         (+ offset 86400)
+                         offset))]
+          (recur current-event (first rest-events) (rest rest-events) (conj result (update-event-time current-event (+ event-time offset))) offset))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Fight Splitting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -145,13 +175,11 @@
          event (first all-events)
          events (rest all-events)]
     (if (nil? event)
-      (do
-        (if (seq current-fight)
-          (conj fights current-fight)
-          fights))
+      (if (seq current-fight)
+        (conj fights current-fight)
+        fights)
       (if (= :death (:event-type event))
         (let [dead-entity (:entity-id event)]
-          (println (str "death event: " dead-entity))
           (if (npc? dead-entity)
             (recur fights (conj current-fight (:original-event event)) npcs (conj dead-npcs dead-entity) pcs dead-pcs (first events) (rest events))
             (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs dead-entity) (first events) (rest events))))
@@ -161,8 +189,10 @@
           (recur (conj fights current-fight) [] #{} #{} #{} #{} (first events) (rest events))
           (if (contains? #{:died :slain} (:event-type event))
             (let [events (insert-death-later event (rest events))]
-              (println (str (:event-type event) " event: " (dead-entity event)))
               (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))
             (if (or (hostile-action? event) (seq current-fight))
               (recur fights (conj current-fight event) (concat npcs (extract-npcs event)) dead-npcs (concat pcs (extract-pcs event)) dead-pcs (first events) (rest events))
               (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))))))))
+
+(defn fight-duration [events]
+  (- (:event-time (last events)) (:event-time (first events))))

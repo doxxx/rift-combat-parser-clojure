@@ -22,6 +22,16 @@
                                                "T=P#R=C#227009568756889439" "Lucida",
                                                "T=N#R=O#9223372037794304832" "Arban Chinua"}))
 
+(let [events [(->CombatData 10 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
+              (->CombatData 15 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
+              (->CombatData 20 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")
+              (->CombatData 0 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")
+              (->CombatData 5 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")
+              (->CombatData 10 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")
+              (->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")]
+      norm-events (normalize-event-times events)]
+  (fact (map :event-time norm-events) => [0 5 10 86390 86395 86400 172791]))
+
 (with-open [reader (jio/reader "src/test/resources/CombatLog.txt")]
   (let [events (parse reader)]
     (fact (count events) => 100)))
