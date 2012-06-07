@@ -51,6 +51,9 @@
   (let [[_ hr min sec] (re-matches time-re s)]
     (+ (* (Integer/parseInt hr) 60 60) (* (Integer/parseInt min) 60) (Integer/parseInt sec))))
 
+(defn pprint-time [t]
+  (str (int (/ t (* 60 60))) ":" (int (/ (rem t (* 60 60)) 60)) ":" (int (rem (rem t (* 60 60)) 60))))
+
 (defn parse-combat-event [event-time data]
   (let [[_ event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text] (re-matches combat-event-re data)]
     (->CombatData event-time (int-to-event-type (Integer/parseInt event-type)) actor-id target-id actor-owner-id target-owner-id actor-name target-name (Integer/parseInt amount) (Integer/parseInt spell-id) spell-name text)))
