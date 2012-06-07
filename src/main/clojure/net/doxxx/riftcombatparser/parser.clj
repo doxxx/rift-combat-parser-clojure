@@ -1,5 +1,5 @@
 (ns net.doxxx.riftcombatparser.parser
-  (:require clojure.set))
+  (:require [clojure.set :as cs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Event Types
@@ -29,7 +29,7 @@
 
 (defn event-type? [x] (contains? event-types x))
 
-(def int-to-event-type (clojure.set/map-invert event-types))
+(def int-to-event-type (cs/map-invert event-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Parsing Functions
@@ -152,10 +152,10 @@
         nil))))
 
 (defn extract-npcs [event]
-  (filter npc? [(:actor-id event) (:target-id event)]))
+  (set (filter npc? [(:actor-id event) (:target-id event)])))
 
 (defn extract-pcs [event]
-  (filter pc? [(:actor-id event) (:target-id event)]))
+  (set (filter pc? [(:actor-id event) (:target-id event)])))
 
 (defrecord DeathEvent [event-time event-type entity-id original-event])
 
@@ -204,22 +204,25 @@
       (let [event (first events)
             event-type (:event-type event)]
         (if (= :death event-type)
-          (let [dead-entity (:entity-id event)]
+          (let [dead-entity (:entity-id event)
+                original-event (:original-event event)]
             (if (npc? dead-entity)
               (do
                 (println (str (:event-time event) ": Processing NPC death: " dead-entity))
-                (recur fights (conj current-fight (:original-event event)) npcs (conj dead-npcs dead-entity) pcs dead-pcs (rest events)))
+                (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) (conj dead-npcs dead-entity) (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))
               (do
                 (println (str (:event-time event) ": Processing PC death: " dead-entity))
-                (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs dead-entity) (rest events)))))
+                (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) dead-npcs (cs/union pcs (extract-pcs original-event)) (conj dead-pcs dead-entity) (rest events)))))
           (if (fight-end? event current-fight npcs dead-npcs pcs dead-pcs)
             (recur (conj fights current-fight) [] #{} #{} #{} #{} events)
             (if (or (= :died event-type) (= :slain event-type))
               (recur fights current-fight npcs dead-npcs pcs dead-pcs (insert-death-later event (rest events)))
               (if (or (hostile-action? event) (seq current-fight))
                 (do
-                  (when (empty? current-fight) (println (str (:event-time event) ": First hostile action: " event)))
-                  (recur fights (conj current-fight event) (concat npcs (extract-npcs event)) dead-npcs (concat pcs (extract-pcs event)) dead-pcs (rest events)))
+                  (when (empty? current-fight)
+                    (print (str (:event-time event) ": First hostile action: "))
+                    (prn event))
+                  (recur fights (conj current-fight event) (cs/union npcs (extract-npcs event)) dead-npcs (cs/union pcs (extract-pcs event)) dead-pcs (rest events)))
                 (recur fights current-fight npcs dead-npcs pcs dead-pcs (rest events))))))))))
 
 (defn fight-duration [events]
