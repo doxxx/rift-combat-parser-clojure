@@ -17,4 +17,5 @@
       (println (str (count events) " events loaded."))
       (println (str (count entities) " entities found."))
       (println (str (count fights) " fights found."))
-      (println (map (fn [f] (fight-duration f)) fights)))))
+      (println (map (fn [f] (fight-duration f)) fights))
+      fights)))

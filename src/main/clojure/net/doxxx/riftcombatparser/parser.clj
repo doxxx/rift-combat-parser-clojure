@@ -146,6 +146,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Fight Splitting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def hostile-actions #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage})
 
 (defn- hostile-action? [event]
@@ -187,14 +188,11 @@
         (do
           (println (str (:event-time event) ": All active PCs died; ending fight"))
           true)
-        (let [timeout (time-since-last-event current-fight event)]
-          (if (>= timeout 5)
-            (do
-              (println (str (:event-time event) ": 5 second timeout; ending fight"))
-              true)
-            (do
-;              (println (str (:event-time event) ": not enough time since last event: " timeout))
-              false)))))
+        (if (>= (time-since-last-event current-fight event) 5)
+          (do
+            (println (str (:event-time event) ": 5 second timeout; ending fight"))
+            true)
+          false)))
     false))
 
 (defn valid-action? [event]
