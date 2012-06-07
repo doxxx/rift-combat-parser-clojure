@@ -138,9 +138,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Fight Splitting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def hostile-actions #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage})
 
 (defn- hostile-action? [event]
-  (contains? #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage} (:event-type event)))
+  (contains? hostile-actions (:event-type event)))
 
 (defn- dead-entity [event]
   (let [event-type (:event-type event)]
@@ -159,10 +160,11 @@
 (defrecord DeathEvent [event-time event-type entity-id original-event])
 
 (defn insert-death-later [death events]
-  (let [f (fn [e] (<= (:event-time e) (:event-time death)))
+  (let [death-time (:event-time death)
+        f (fn [e] (<= (:event-time e) death-time))
         prefix (take-while f events)
         suffix (drop-while f events)]
-    (concat prefix [(->DeathEvent (:event-time death) :death (dead-entity death) death)] suffix)))
+    (concat prefix [(->DeathEvent death-time :death (dead-entity death) death)] suffix)))
 
 (defn time-since-last-event [events event]
   (- (:event-time event) (:event-time (peek events))))
@@ -177,11 +179,14 @@
         (do
           (println (str (:event-time event) ": All active PCs died; ending fight"))
           true)
-        (if (>= (time-since-last-event current-fight event) 5)
-          (do
-            (println (str (:event-time event) ": 5 second timeout; ending fight"))
-            true)
-          false)))
+        (let [timeout (time-since-last-event current-fight event)]
+          (if (>= timeout 5)
+            (do
+              (println (str (:event-time event) ": 5 second timeout; ending fight"))
+              true)
+            (do
+;              (println (str (:event-time event) ": not enough time since last event: " timeout))
+              false)))))
     false))
 
 (defn split-fights [all-events]
@@ -191,31 +196,31 @@
          dead-npcs #{}
          pcs #{}
          dead-pcs #{}
-         event (first all-events)
-         events (rest all-events)]
-    (if (nil? event)
+         events all-events]
+    (if (empty? events)
       (if (seq current-fight)
         (conj fights current-fight)
         fights)
-      (if (= :death (:event-type event))
-        (let [dead-entity (:entity-id event)]
-          (if (npc? dead-entity)
-            (do
-              (println (str (:event-time event) ": Processing NPC death: " dead-entity))
-              (recur fights (conj current-fight (:original-event event)) npcs (conj dead-npcs dead-entity) pcs dead-pcs (first events) (rest events)))
-            (do
-              (println (str (:event-time event) ": Processing PC death: " dead-entity))
-              (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs dead-entity) (first events) (rest events)))))
-        (if (fight-end? event current-fight npcs dead-npcs pcs dead-pcs)
-          (recur (conj fights current-fight) [] #{} #{} #{} #{} event events)
-          (if (contains? #{:died :slain} (:event-type event))
-            (let [events (insert-death-later event events)]
-              (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))
-            (if (or (hostile-action? event) (seq current-fight))
+      (let [event (first events)
+            event-type (:event-type event)]
+        (if (= :death event-type)
+          (let [dead-entity (:entity-id event)]
+            (if (npc? dead-entity)
               (do
-                (when (empty? current-fight) (println (str (:event-time event) ": First hostile action: " event)))
-                (recur fights (conj current-fight event) (concat npcs (extract-npcs event)) dead-npcs (concat pcs (extract-pcs event)) dead-pcs (first events) (rest events)))
-              (recur fights current-fight npcs dead-npcs pcs dead-pcs (first events) (rest events)))))))))
+                (println (str (:event-time event) ": Processing NPC death: " dead-entity))
+                (recur fights (conj current-fight (:original-event event)) npcs (conj dead-npcs dead-entity) pcs dead-pcs (rest events)))
+              (do
+                (println (str (:event-time event) ": Processing PC death: " dead-entity))
+                (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs dead-entity) (rest events)))))
+          (if (fight-end? event current-fight npcs dead-npcs pcs dead-pcs)
+            (recur (conj fights current-fight) [] #{} #{} #{} #{} events)
+            (if (or (= :died event-type) (= :slain event-type))
+              (recur fights current-fight npcs dead-npcs pcs dead-pcs (insert-death-later event (rest events)))
+              (if (or (hostile-action? event) (seq current-fight))
+                (do
+                  (when (empty? current-fight) (println (str (:event-time event) ": First hostile action: " event)))
+                  (recur fights (conj current-fight event) (concat npcs (extract-npcs event)) dead-npcs (concat pcs (extract-pcs event)) dead-pcs (rest events)))
+                (recur fights current-fight npcs dead-npcs pcs dead-pcs (rest events))))))))))
 
 (defn fight-duration [events]
   (- (:event-time (last events)) (:event-time (first events))))

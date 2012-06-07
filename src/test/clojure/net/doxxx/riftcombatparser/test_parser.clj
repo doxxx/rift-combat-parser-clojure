@@ -67,3 +67,15 @@
 ;  #net.doxxx.riftcombatparser.parser.CombatData {:event-time 3, :event-type :direct-damage, :actor-id "T=N#R=O#901", :target-id "T=P#R=C#01", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "NPC1", :target-name "PC1", :amount 500, :spell-id 1, :spell-name "Spell1", :text "text"}]
 ; [#net.doxxx.riftcombatparser.parser.CombatData {:event-time 9, :event-type :direct-damage, :actor-id "T=P#R=C#01", :target-id "T=N#R=O#901", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "PC1", :target-name "NPC1", :amount 300, :spell-id 2, :spell-name "Spell2", :text "text"}
 ;  #net.doxxx.riftcombatparser.parser.CombatData {:event-time 10, :event-type :direct-damage, :actor-id "T=N#R=O#901", :target-id "T=P#R=C#01", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "NPC1", :target-name "PC1", :amount 500, :spell-id 1, :spell-name "Spell1", :text "text"}]]
+
+(let [lines ["23:54:54: ( 11 , T=P#R=O#231090956094727465 , T=N#R=O#9223372048838202481 , T=X#R=X#0 , T=X#R=X#0 , Rofldotz , Abyssal Infiltrator , 0 , 0 ,  ) Rofldotz has slain Abyssal Infiltrator!"
+             "23:54:54: ( 9 , T=P#R=O#231090956094727465 , T=N#R=O#9223372048838202481 , T=X#R=X#0 , T=X#R=X#0 , Rofldotz , Abyssal Infiltrator , 0 , 1571501358 , Countdown ) Rofldotz's Countdown dissipates from Abyssal Infiltrator."
+             "23:54:54: ( 3 , T=P#R=O#231090956094727465 , T=N#R=O#9223372048838202481 , T=X#R=X#0 , T=X#R=X#0 , Rofldotz , Abyssal Infiltrator , 1387 , 795424656 , Cinder Burst ) Rofldotz's Cinder Burst hits Abyssal Infiltrator for 1387 Fire damage. (1017 overkill)"
+             "23:54:58 Combat Begin"
+             "23:54:58: ( 3 , T=P#R=C#231090956085911584 , T=N#R=O#9223372045142730245 , T=X#R=X#0 , T=X#R=X#0 , Lucida , Boss Practice Dummy , 69 , 548293169 , Auto Attack ) Lucida's Auto Attack hits Boss Practice Dummy for 69 Physical damage."
+             "23:55:00: ( 6 , T=P#R=G#231090956086045364 , T=N#R=G#9223372049233347913 , T=X#R=X#0 , T=P#R=G#231090956086045364 , Thelastresort , Bane , 0 , 156052578 , Combined Effort ) Bane gains Thelastresort's Combined Effort."
+             "23:55:00: ( 6 , T=P#R=G#231090956086045364 , T=P#R=G#231090956086045364 , T=X#R=X#0 , T=X#R=X#0 , Thelastresort , Thelastresort , 0 , 173580775 , Fae Hammer ) Thelastresort gains Thelastresort's Fae Hammer."
+             "23:55:00: ( 27 , T=P#R=G#231090956086045364 , T=P#R=G#231090956086045364 , T=X#R=X#0 , T=X#R=X#0 , Thelastresort , Thelastresort , 44 , 173580775 , Fae Hammer ) Thelastresort's Fae Hammer gives Thelastresort 44 Mana."]
+     events (normalize-event-times (parse-lines lines))
+     mod-events (insert-death-later (first events) (rest events))]
+  (fact mod-events => (concat (take 2 (drop 1 events)) [(->DeathEvent 0 :death "T=N#R=O#9223372048838202481" (first events))] (drop 3 events))))
