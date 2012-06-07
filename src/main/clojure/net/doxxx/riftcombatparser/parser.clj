@@ -147,11 +147,11 @@
 ; Fight Splitting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def hostile-actions #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage})
+(def hostile-event-types #{:direct-damage, :damage-over-time, :debuff-gain, :miss, :dodge, :parry, :resist, :crit-damage})
 (def ignored-hostile-spells #{"Sacrifice Life: Mana" "Critter Killer"})
 
 (defn- hostile-action? [event]
-  (and (contains? hostile-actions (:event-type event))
+  (and (contains? hostile-event-types (:event-type event))
     (not (contains? ignored-hostile-spells (:spell-name event)))
     (not (and (pc? (:actor-id event)) (pc? (:target-id event))))))
 
