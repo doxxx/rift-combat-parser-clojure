@@ -48,3 +48,22 @@
       fights (split-fights events)]
   (fact (count fights) => 1)
   (fact (first fights) => events))
+
+(defn simplify-event [event]
+  [(:event-time event) (:actor-name event) (:target-name event)])
+
+(let [fight1 [(->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
+              (->CombatData 2 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
+              (->CombatData 3 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")]
+      fight2 [(->CombatData 8 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
+              (->CombatData 9 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
+              (->CombatData 10 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")]
+      events (concat fight1 fight2)
+      fights (split-fights events)]
+  (fact (map (fn [x] (map simplify-event x)) fights) => [(map simplify-event fight1) (map simplify-event fight2)]))
+
+;[[#net.doxxx.riftcombatparser.parser.CombatData {:event-time 1, :event-type :direct-damage, :actor-id "T=N#R=O#901", :target-id "T=P#R=C#01", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "NPC1", :target-name "PC1", :amount 100, :spell-id 1, :spell-name "Spell1", :text "text"}
+;  #net.doxxx.riftcombatparser.parser.CombatData {:event-time 2, :event-type :direct-damage, :actor-id "T=P#R=C#01", :target-id "T=N#R=O#901", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "PC1", :target-name "NPC1", :amount 300, :spell-id 2, :spell-name "Spell2", :text "text"}
+;  #net.doxxx.riftcombatparser.parser.CombatData {:event-time 3, :event-type :direct-damage, :actor-id "T=N#R=O#901", :target-id "T=P#R=C#01", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "NPC1", :target-name "PC1", :amount 500, :spell-id 1, :spell-name "Spell1", :text "text"}]
+; [#net.doxxx.riftcombatparser.parser.CombatData {:event-time 9, :event-type :direct-damage, :actor-id "T=P#R=C#01", :target-id "T=N#R=O#901", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "PC1", :target-name "NPC1", :amount 300, :spell-id 2, :spell-name "Spell2", :text "text"}
+;  #net.doxxx.riftcombatparser.parser.CombatData {:event-time 10, :event-type :direct-damage, :actor-id "T=N#R=O#901", :target-id "T=P#R=C#01", :actor-owner-id "T=X#R=X#0", :target-owner-id "T=X#R=X#0", :actor-name "NPC1", :target-name "PC1", :amount 500, :spell-id 1, :spell-name "Spell1", :text "text"}]]
