@@ -129,7 +129,7 @@
     (map normalize-event-time events)))
 
 (defn update-event-time [event new-time]
-  (merge event {:event-time new-time}))
+  (assoc event :event-time new-time))
 
 (defn normalize-event-times [events]
   (loop [prev-event nil current-event (first events) rest-events (rest events) result [] offset (- (:event-time (first events)))]
