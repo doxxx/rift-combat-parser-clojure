@@ -167,6 +167,23 @@
 (defn time-since-last-event [events event]
   (- (:event-time event) (:event-time (peek events))))
 
+(defn fight-end? [event current-fight npcs dead-npcs pcs dead-pcs]
+  (if (seq current-fight)
+    (if (and (seq npcs) (= npcs dead-npcs))
+      (do
+        (println (str (:event-time event) ": All active NPCs died; ending fight"))
+        true)
+      (if (and (seq pcs) (= pcs dead-pcs))
+        (do
+          (println (str (:event-time event) ": All active PCs died; ending fight"))
+          true)
+        (if (>= (time-since-last-event current-fight event) 5)
+          (do
+            (println (str (:event-time event) ": 5 second timeout; ending fight"))
+            true)
+          false)))
+    false))
+
 (defn split-fights [all-events]
   (loop [fights []
          current-fight []
@@ -189,9 +206,7 @@
             (do
               (println (str (:event-time event) ": Processing PC death: " dead-entity))
               (recur fights (conj current-fight (:original-event event)) npcs dead-npcs pcs (conj dead-pcs dead-entity) (first events) (rest events)))))
-        (if (or (and (seq current-fight) (seq npcs) (= npcs dead-npcs))
-              (and (seq current-fight) (seq pcs) (= pcs dead-pcs))
-              (and (seq current-fight) (>= (time-since-last-event current-fight event) 5)))
+        (if (fight-end? event current-fight npcs dead-npcs pcs dead-pcs)
           (recur (conj fights current-fight) [] #{} #{} #{} #{} event events)
           (if (contains? #{:died :slain} (:event-type event))
             (let [events (insert-death-later event events)]
