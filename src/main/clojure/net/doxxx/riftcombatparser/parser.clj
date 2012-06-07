@@ -107,15 +107,11 @@
 ; Event Processing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn- update-entities [entities event]
-  (assoc entities (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
+(defn- map-entity [event]
+  (assoc {} (:actor-id event) (:actor-name event) (:target-id event) (:target-name event)))
 
 (defn map-entities [events]
-  (loop [entities {}
-         events events]
-    (if (empty? events)
-      entities
-      (recur (update-entities entities (first events)) (rest events)))))
+  (reduce merge (pmap map-entity events)))
 
 (defn- rel-time [event start-time]
   (let [t (- (:event-time event) start-time)]
