@@ -79,17 +79,26 @@
 
 (defn unpack-entity-id [id] (rest (re-matches entity-re id)))
 
+(defn- compare-entity-type [id expected-type]
+  (if (nil? id)
+    nil
+    (let [[t r i] (unpack-entity-id id)]
+      (= t expected-type))))
+
 (defn npc? [id]
-  (let [[t r i] (unpack-entity-id id)]
-    (= t "N")))
+  (compare-entity-type id "N"))
 
 (defn pc? [id]
-  (let [[t r i] (unpack-entity-id id)]
-    (= t "P")))
+  (compare-entity-type id "P"))
 
 (defn nobody? [id]
-  (let [[t r i] (unpack-entity-id id)]
-    (= t "X")))
+  (compare-entity-type id "X"))
+
+(defn grouped? [id]
+  (if (nil? id)
+    nil
+    (let [[t r i] (unpack-entity-id id)]
+      (or (= r "C") (= r "G") (= r "R")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Event Processing
@@ -189,6 +198,18 @@
               false)))))
     false))
 
+(defn valid-action? [event]
+  (and
+    (= CombatData (type event))
+    (or
+      (contains? #{:slain :died :power-gain} (:event-type event))
+      (not-empty (:spell-name event)))
+    (or
+      (grouped? (:actor-id event))
+      (grouped? (:target-id event))
+      (npc? (:actor-id event))
+      (npc? (:target-id event)))))
+
 (defn split-fights [all-events]
   (loop [fights []
          current-fight []
@@ -196,7 +217,7 @@
          dead-npcs #{}
          pcs #{}
          dead-pcs #{}
-         events all-events]
+         events (filter valid-action? all-events)]
     (if (empty? events)
       (if (seq current-fight)
         (conj fights current-fight)
