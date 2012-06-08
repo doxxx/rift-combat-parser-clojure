@@ -103,6 +103,12 @@
     (let [[t r i] (unpack-entity-id id)]
       (or (= r "C") (= r "G") (= r "R")))))
 
+(defn pet? [id owner-id]
+  (and (pc? owner-id) (npc? id)))
+
+(defn npc-not-pet? [id owner-id]
+  (when (and (npc? id) (not (pet? id owner-id))) #{id}))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Event Processing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,28 +161,31 @@
     (not (contains? ignored-hostile-spells (:spell-name event)))
     (not (and (pc? (:actor-id event)) (pc? (:target-id event))))))
 
-(defn- dead-entity [event]
+(defn- get-dead-entity [event]
   (let [event-type (:event-type event)]
     (if (= :died event-type)
-      (:actor-id event)
+      [(:actor-id event) (:actor-owner-id event)]
       (if (= :slain event-type)
-        (:target-id event)
+        [(:target-id event) (:target-owner-id event)]
         nil))))
 
 (defn extract-npcs [event]
-  (set (filter npc? [(:actor-id event) (:target-id event)])))
+  (cs/union
+    (npc-not-pet? (:actor-id event) (:actor-owner-id event))
+    (npc-not-pet? (:target-id event) (:target-owner-id event))))
 
 (defn extract-pcs [event]
   (set (filter pc? [(:actor-id event) (:target-id event)])))
 
-(defrecord DeathEvent [event-time event-type entity-id original-event])
+(defrecord DeathEvent [event-time event-type entity-id entity-owner-id original-event])
 
 (defn insert-death-later [death events]
   (let [death-time (:event-time death)
         f (fn [e] (<= (:event-time e) death-time))
         prefix (take-while f events)
-        suffix (drop-while f events)]
-    (concat prefix [(->DeathEvent death-time :death (dead-entity death) death)] suffix)))
+        suffix (drop-while f events)
+        [dead-entity dead-entity-owner] (get-dead-entity death)]
+    (concat prefix [(->DeathEvent death-time :death dead-entity dead-entity-owner death)] suffix)))
 
 (defn time-since-last-event [events event]
   (- (:event-time event) (:event-time (peek events))))
@@ -194,6 +203,10 @@
         (if (>= (time-since-last-event current-fight event) 5)
           (do
             (println (str (:event-time event) ": 5 second timeout; ending fight"))
+            (println (str "Active NPCs: " npcs))
+            (println (str "Dead NPCs: " dead-npcs))
+            (println (str "Active PCs: " pcs))
+            (println (str "Dead PCs: " dead-pcs))
             true)
           false)))
     false))
@@ -226,11 +239,17 @@
             event-type (:event-type event)]
         (if (= :death event-type)
           (let [dead-entity (:entity-id event)
+                dead-entity-owner (:entity-owner-id event)
                 original-event (:original-event event)]
             (if (npc? dead-entity)
               (do
-                (println (str (:event-time event) ": Processing NPC death: " dead-entity))
-                (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) (conj dead-npcs dead-entity) (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))
+                (if (pet? dead-entity dead-entity-owner)
+                  (do
+                    (println (str (:event-time event) ": Processing Pet death: " dead-entity))
+                    (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) dead-npcs (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))
+                  (do
+                    (println (str (:event-time event) ": Processing NPC death: " dead-entity))
+                    (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) (conj dead-npcs dead-entity) (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))))
               (do
                 (println (str (:event-time event) ": Processing PC death: " dead-entity))
                 (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) dead-npcs (cs/union pcs (extract-pcs original-event)) (conj dead-pcs dead-entity) (rest events)))))

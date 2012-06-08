@@ -45,6 +45,11 @@
 (fact (valid-action? (->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")) => true)
 (fact (valid-action? (->CombatData 3 :slain "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 0 0 "" "text")) => true)
 
+(fact (extract-npcs (->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")) => #{"T=N#R=O#901"})
+(fact (extract-npcs (->CombatData 1 :direct-damage "T=N#R=G#901" "T=N#R=O#902" "T=P#R=G#01" "T=X#R=X#0" "Pet1" "NPC1" 100 1 "Spell1" "text")) => #{"T=N#R=O#902"})
+(fact (extract-npcs (->CombatData 1 :buff-gain "T=N#R=O#901" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "NPC1" 0 11 "Buff1" "text")) => #{"T=N#R=O#901"})
+(fact (extract-npcs (->CombatData 1 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")) => #{"T=N#R=O#901"})
+
 (let [events [(->CombatData 1 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
               (->CombatData 2 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
               (->CombatData 3 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")]
@@ -62,7 +67,7 @@
   (fact "death event is inserted at correct location"
     (map simplify-event (insert-death-later (->CombatData 3 :slain "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 0 0 "" "text") events)) =>
     (map simplify-event [(->CombatData 3 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")
-                         (->DeathEvent 3 :death "T=N#R=O#901" (->CombatData 3 :slain "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 0 0 "" "text"))
+                         (->DeathEvent 3 :death "T=N#R=O#901" "T=X#R=X#0" (->CombatData 3 :slain "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 0 0 "" "text"))
                          (->CombatData 5 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 100 1 "Spell1" "text")
                          (->CombatData 6 :direct-damage "T=P#R=C#01" "T=N#R=O#901" "T=X#R=X#0" "T=X#R=X#0" "PC1" "NPC1" 300 2 "Spell2" "text")
                          (->CombatData 7 :direct-damage "T=N#R=O#901" "T=P#R=C#01" "T=X#R=X#0" "T=X#R=X#0" "NPC1" "PC1" 500 1 "Spell1" "text")])))
