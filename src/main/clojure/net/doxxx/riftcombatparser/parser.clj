@@ -190,19 +190,22 @@
 (defn time-since-last-event [events event]
   (- (:event-time event) (:event-time (peek events))))
 
+(defn fight-duration [events]
+  (- (:event-time (peek events)) (:event-time (first events))))
+
 (defn fight-end? [event current-fight npcs dead-npcs pcs dead-pcs]
   (if (seq current-fight)
     (if (and (seq npcs) (= npcs dead-npcs))
       (do
-        (println (str (:event-time event) ": All active NPCs died; ending fight"))
+        (println (str (:event-time event) ": All active NPCs died; ending fight (" (fight-duration current-fight) "s)"))
         true)
       (if (and (seq pcs) (= pcs dead-pcs))
         (do
-          (println (str (:event-time event) ": All active PCs died; ending fight"))
+          (println (str (:event-time event) ": All active PCs died; ending fight (" (fight-duration current-fight) "s)"))
           true)
         (if (>= (time-since-last-event current-fight event) 5)
           (do
-            (println (str (:event-time event) ": 5 second timeout; ending fight"))
+            (println (str (:event-time event) ": 5 second timeout; ending fight (" (fight-duration current-fight) "s)"))
             (println (str "Active NPCs: " npcs))
             (println (str "Dead NPCs: " dead-npcs))
             (println (str "Active PCs: " pcs))
@@ -264,6 +267,3 @@
                     (prn event))
                   (recur fights (conj current-fight event) (cs/union npcs (extract-npcs event)) dead-npcs (cs/union pcs (extract-pcs event)) dead-pcs (rest events)))
                 (recur fights current-fight npcs dead-npcs pcs dead-pcs (rest events))))))))))
-
-(defn fight-duration [events]
-  (- (:event-time (last events)) (:event-time (first events))))
