@@ -267,3 +267,18 @@
                     (prn event))
                   (recur fights (conj current-fight event) (cs/union npcs (extract-npcs event)) dead-npcs (cs/union pcs (extract-pcs event)) dead-pcs (rest events)))
                 (recur fights current-fight npcs dead-npcs pcs dead-pcs (rest events))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Fight Processing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(def damage-event-types #{:direct-damage :damage-over-time :crit-damage})
+
+(defn extract-npc-damage [event]
+  (when (and (npc? (:target-id event)) (contains? damage-event-types (:event-type event)))
+    [(:target-name event) (:amount event)]))
+
+(defn total-damage [m [name dmg]]
+  (if (nil? name) m (conj m [name (+ dmg (m name 0))])))
+
+(defn primary-npc [events]
+  (first (last (sort-by (fn [[name dmg]] dmg) (reduce total-damage {} (map extract-npc-damage events))))))
