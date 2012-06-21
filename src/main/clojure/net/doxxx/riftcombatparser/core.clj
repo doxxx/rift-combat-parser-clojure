@@ -1,5 +1,6 @@
 (ns net.doxxx.riftcombatparser.core
   (:use net.doxxx.riftcombatparser.parser)
+  (:use net.doxxx.riftcombatparser.processor)
   (:require [clojure.java.io :as jio]))
 
 (defn test-large-file-performance []
