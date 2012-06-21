@@ -11,9 +11,6 @@
 (defmulti pprint-str class)
 
 (defmethod pprint-str :default [x]
-  (.toString x))
-
-;(defn pprint-str [x]
-;  (let [w (StringWriter.)]
-;    (pp/pprint x w)
-;    (.toString w)))
+  (let [w (StringWriter.)]
+    (pp/pprint x w)
+    (.toString w)))
