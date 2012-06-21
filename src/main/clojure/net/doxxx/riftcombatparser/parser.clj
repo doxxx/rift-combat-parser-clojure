@@ -1,4 +1,5 @@
 (ns net.doxxx.riftcombatparser.parser
+  (:use net.doxxx.riftcombatparser.util)
   (:require [clojure.set :as cs]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -46,6 +47,9 @@
 
 (defrecord CombatToggle [event-time in-combat])
 (defrecord CombatData [event-time event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text])
+
+(defmethod pprint-str CombatData [x]
+  (str (:event-time x) ": " (:actor-name x) " -> " (:target-name x) " -- " (:spell-name x)))
 
 (defn parse-time [s]
   (let [[_ hr min sec] (re-matches time-re s)]
@@ -197,19 +201,19 @@
   (if (seq current-fight)
     (if (and (seq npcs) (= npcs dead-npcs))
       (do
-        (println (str (:event-time event) ": All active NPCs died; ending fight (" (fight-duration current-fight) "s)"))
+        (debug-log (str (:event-time event) ": All active NPCs died; ending fight (" (fight-duration current-fight) "s)"))
         true)
       (if (and (seq pcs) (= pcs dead-pcs))
         (do
-          (println (str (:event-time event) ": All active PCs died; ending fight (" (fight-duration current-fight) "s)"))
+          (debug-log (str (:event-time event) ": All active PCs died; ending fight (" (fight-duration current-fight) "s)"))
           true)
         (if (>= (time-since-last-event current-fight event) 5)
           (do
-            (println (str (:event-time event) ": 5 second timeout; ending fight (" (fight-duration current-fight) "s)"))
-            (println (str "Active NPCs: " npcs))
-            (println (str "Dead NPCs: " dead-npcs))
-            (println (str "Active PCs: " pcs))
-            (println (str "Dead PCs: " dead-pcs))
+            (debug-log (str (:event-time event) ": 5 second timeout; ending fight (" (fight-duration current-fight) "s)"))
+            (debug-log (str "Active NPCs: " npcs))
+            (debug-log (str "Dead NPCs: " dead-npcs))
+            (debug-log (str "Active PCs: " pcs))
+            (debug-log (str "Dead PCs: " dead-pcs))
             true)
           false)))
     false))
@@ -248,13 +252,13 @@
               (do
                 (if (pet? dead-entity dead-entity-owner)
                   (do
-                    (println (str (:event-time event) ": Processing Pet death: " dead-entity))
+                    (debug-log (str (:event-time event) ": Processing Pet death: " dead-entity))
                     (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) dead-npcs (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))
                   (do
-                    (println (str (:event-time event) ": Processing NPC death: " dead-entity))
+                    (debug-log (str (:event-time event) ": Processing NPC death: " dead-entity))
                     (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) (conj dead-npcs dead-entity) (cs/union pcs (extract-pcs original-event)) dead-pcs (rest events)))))
               (do
-                (println (str (:event-time event) ": Processing PC death: " dead-entity))
+                (debug-log (str (:event-time event) ": Processing PC death: " dead-entity))
                 (recur fights (conj current-fight original-event) (cs/union npcs (extract-npcs original-event)) dead-npcs (cs/union pcs (extract-pcs original-event)) (conj dead-pcs dead-entity) (rest events)))))
           (if (fight-end? event current-fight npcs dead-npcs pcs dead-pcs)
             (recur (conj fights current-fight) [] #{} #{} #{} #{} events)
@@ -263,8 +267,7 @@
               (if (or (hostile-action? event) (seq current-fight))
                 (do
                   (when (empty? current-fight)
-                    (print (str (:event-time event) ": First hostile action: "))
-                    (prn event))
+                    (debug-log (str (:event-time event) ": First hostile action: " (pprint-str event))))
                   (recur fights (conj current-fight event) (cs/union npcs (extract-npcs event)) dead-npcs (cs/union pcs (extract-pcs event)) dead-pcs (rest events)))
                 (recur fights current-fight npcs dead-npcs pcs dead-pcs (rest events))))))))))
 
