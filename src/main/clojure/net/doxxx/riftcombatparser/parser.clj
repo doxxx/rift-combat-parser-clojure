@@ -36,14 +36,10 @@
 ; Parsing Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; groups: hr min sec
-(def time-re #"([0-9][0-9]):([0-9][0-9]):([0-9][0-9])")
-; groups: time, data
-(def line-re #"^([0-9][0-9]:[0-9][0-9]:[0-9][0-9])(.+)$")
-; groups: state
-(def combat-toggle-re #" Combat (Begin|End)")
-; groups: event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text
-(def combat-event-re #": \( ([0-9]+) , (T=.+) , (T=.+) , (T=.+) , (T=.+) , (.*?) , (.*?) , (-?[0-9]*) , ([0-9]*) , (.*?) \) (.+)")
+; groups: hr min sec state
+(def combat-toggle-re #"([0-9][0-9]):([0-9][0-9]):([0-9][0-9]) Combat (Begin|End)")
+; groups: hr min sec event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text
+(def combat-event-re #"([0-9][0-9]):([0-9][0-9]):([0-9][0-9]): \( ([0-9]+) , (T=.+) , (T=.+) , (T=.+) , (T=.+) , (.*?) , (.*?) , (-?[0-9]*) , ([0-9]*) , (.*?) \) (.+)")
 
 (defrecord CombatToggle [event-time in-combat])
 (defrecord CombatData [event-time event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text])
@@ -51,26 +47,24 @@
 (defmethod pprint-str CombatData [x]
   (str (:event-time x) ": " (:actor-name x) " -> " (:target-name x) " -- " (:spell-name x)))
 
-(defn parse-time [s]
-  (let [[_ hr min sec] (re-matches time-re s)]
-    (+ (* (Integer/parseInt hr) 60 60) (* (Integer/parseInt min) 60) (Integer/parseInt sec))))
+(defn calc-time [hr min sec]
+  (+ (* hr 60 60) (* min 60) sec))
+
+(defn parse-time [hr min sec]
+  (calc-time (Integer/parseInt hr) (Integer/parseInt min) (Integer/parseInt sec)))
 
 (defn pprint-time [t]
   (str (int (/ t (* 60 60))) ":" (int (/ (rem t (* 60 60)) 60)) ":" (int (rem (rem t (* 60 60)) 60))))
 
-(defn parse-combat-event [event-time data]
-  (let [[_ event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount spell-id spell-name text] (re-matches combat-event-re data)]
-    (->CombatData event-time (int-to-event-type (Integer/parseInt event-type)) actor-id target-id actor-owner-id target-owner-id actor-name target-name (Integer/parseInt amount) (Integer/parseInt spell-id) spell-name text)))
-
-(defn parse-line-data [event-time data]
-  (let [[_ state] (re-matches combat-toggle-re data)]
-    (if (nil? state)
-      (parse-combat-event event-time data)
-      (->CombatToggle event-time (= state "Begin")))))
-
 (defn parse-line [line]
-  (let [[_ event-time data] (re-matches line-re line)]
-    (parse-line-data (parse-time event-time) data)))
+  (let [[_ hr min sec state] (re-matches combat-toggle-re line)]
+    (if (nil? state)
+      (let [[_ hr min sec event-type actor-id target-id actor-owner-id target-owner-id actor-name target-name amount
+             spell-id spell-name text] (re-matches combat-event-re line)]
+        (->CombatData (parse-time hr min sec) (int-to-event-type (Integer/parseInt event-type)) actor-id target-id
+          actor-owner-id target-owner-id actor-name target-name (Integer/parseInt amount) (Integer/parseInt spell-id)
+          spell-name text))
+      (->CombatToggle (parse-time hr min sec) (= state "Begin")))))
 
 (defn parse-lines [lines]
   (pmap parse-line lines))

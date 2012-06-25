@@ -12,7 +12,8 @@
 
 (defn test-large-file-split []
   (with-open [reader (jio/reader "src/test/resources/CombatLog-Large.txt")]
-    (let [raw-events (time (doall (parse reader)))
+    (let [lines (time (doall (line-seq reader)))
+          raw-events (time (doall (parse-lines lines)))
           events (time (doall (normalize-event-times raw-events)))
           entities (time (map-entities events))
           fights (time (split-fights events))]

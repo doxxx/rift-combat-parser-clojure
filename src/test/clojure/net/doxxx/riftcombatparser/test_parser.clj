@@ -3,19 +3,14 @@
   (:use midje.sweet)
   (:require [clojure.java.io :as jio]))
 
-(fact (parse-time "10:10:10") => 36610)
+(fact (calc-time 10 10 10) => 36610)
 
-(fact (parse-line-data 123 " Combat Begin") => (->CombatToggle 123 true))
+(fact (parse-line "10:10:10 Combat Begin") => (->CombatToggle 36610 true))
 
-(fact (parse-line-data 123 " Combat End") => (->CombatToggle 123 false))
+(fact (parse-line "10:10:10 Combat End") => (->CombatToggle 36610 false))
 
-(let [data ": ( 7 , T=N#R=O#9223372037794304832 , T=N#R=O#9223372037794304832 , T=X#R=X#0 , T=X#R=X#0 , Arban Chinua , Arban Chinua , 0 , 463220133 , Hellfire Blades ) Arban Chinua's Hellfire Blades fades from Arban Chinua."
-      event (->CombatData 1 :buff-fade "T=N#R=O#9223372037794304832" "T=N#R=O#9223372037794304832" "T=X#R=X#0" "T=X#R=X#0" "Arban Chinua" "Arban Chinua" 0 463220133 "Hellfire Blades" "Arban Chinua's Hellfire Blades fades from Arban Chinua.")]
-  (fact (parse-combat-event 1 data) => event))
-
-(with-open [reader (jio/reader "src/test/resources/CombatLog.txt")]
-  (let [events (parse reader)]
-    (fact (count events) => 100)))
+(fact (parse-line "10:10:10: ( 7 , T=N#R=O#9223372037794304832 , T=N#R=O#9223372037794304832 , T=X#R=X#0 , T=X#R=X#0 , Arban Chinua , Arban Chinua , 0 , 463220133 , Hellfire Blades ) Arban Chinua's Hellfire Blades fades from Arban Chinua.")
+  => (->CombatData 36610 :buff-fade "T=N#R=O#9223372037794304832" "T=N#R=O#9223372037794304832" "T=X#R=X#0" "T=X#R=X#0" "Arban Chinua" "Arban Chinua" 0 463220133 "Hellfire Blades" "Arban Chinua's Hellfire Blades fades from Arban Chinua."))
 
 (fact (unpack-entity-id "T=N#R=O#9223372037794304832") => ["N", "O", "9223372037794304832"])
 
