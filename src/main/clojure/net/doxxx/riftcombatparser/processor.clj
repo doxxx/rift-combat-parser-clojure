@@ -20,15 +20,6 @@
       (+ t 86400)
       t)))
 
-(def ^:dynamic *start-time* 0)
-
-(defn- normalize-event-time [event]
-  (merge event (assoc (apply hash-map (interleave (keys event) (vals event))) :event-time (rel-time event *start-time*))))
-
-(defn normalize-event-times [events]
-  (binding [*start-time* (:event-time (first events))]
-    (map normalize-event-time events)))
-
 (defn update-event-time [event new-time]
   (assoc event :event-time new-time))
 
