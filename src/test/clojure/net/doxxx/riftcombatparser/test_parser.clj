@@ -4,6 +4,11 @@
   (:require [clojure.java.io :as jio]))
 
 (fact (calc-time 10 10 10) => 36610)
+(fact (parse-time "10" "10" "10") => 36610)
+(fact (parse-time "10:10:10") => 36610)
+
+(fact (split-combat-event "7 , T=N#R=O#9223372037794304832 , T=N#R=O#9223372037794304832 , T=X#R=X#0 , T=X#R=X#0 , Arban Chinua , Arban Chinua , 0 , 463220133 , Hellfire Blades")
+  => ["7" "T=N#R=O#9223372037794304832" "T=N#R=O#9223372037794304832" "T=X#R=X#0" "T=X#R=X#0" "Arban Chinua" "Arban Chinua" "0" "463220133" "Hellfire Blades"])
 
 (fact (parse-line "10:10:10 Combat Begin") => (->CombatToggle 36610 true))
 

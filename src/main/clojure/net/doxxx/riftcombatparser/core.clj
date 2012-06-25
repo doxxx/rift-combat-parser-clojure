@@ -23,6 +23,13 @@
       (println (map (fn [f] (fight-duration f)) fights))
       (println (map primary-npc  fights)))))
 
+(defn test-large-file-split2 []
+  (with-open [reader (jio/reader "src/test/resources/CombatLog-Large.txt")]
+    (let [fights (time (split-fights (normalize-event-times (parse reader))))]
+      (println (str (count fights) " fights found."))
+      (println (map (fn [f] (fight-duration f)) fights))
+      (println (map primary-npc fights)))))
+
 (defn load-logfile []
   (with-open [reader (jio/reader "src/test/resources/CombatLog.txt")]
   (let [events (normalize-event-times (parse reader))
